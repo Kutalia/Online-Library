@@ -1,0 +1,65 @@
+﻿**PRIMARY KEYs in each table by default**
+** FULLFIL THE TABLES **
+
+Stores (store_books_id, employees, address), Store_Books(book_id, quantity),
+Authors (book_id), Damaged_Books(user_id, book_id), Notifications(
+type, user_id, destination, datetime_sent, status,
+text), Notif_Statuses(type)
+
+-- 1) ყველა იმ მომხმარებლის ინფორმაცია, ვისაც ერთი წიგნი მაინც აქვს აღებული და დაუბრუნებელი;
+SELECT * FROM Users JOIN Lent_Books
+ON (Users.id = Lent_Books.user_id AND returned IS NULL);
+
+-- 2) ამოვიღოთ ყველა user, რომელთაც ჰქონდათ აღებული წიგნები ბოლო წელს (ვთქვათ, 2016-ში), დასაბრუნებლად user-ის წიგნის სტატუსი (returned IS NULL);
+SELECT * FROM Users JOIN Lent_Books
+ON (Users.id = Lent_Books.user_id AND taken >= 1451606400 AND taken < 1483228800 AND returned IS NULL) GROUP BY Users.id
+
+-- 3) TOP 3 მოთხოვნადი წიგნი;
+SELECT Books.title FROM Books JOIN Lent_Books
+ON (Books.id = Lent_Books.book_id)
+GROUP BY Books.id
+ORDER BY COUNT(Lent_Books.book_id) DESC
+LIMIT 3
+
+-- 4) TOP 3 პოპულარული ავტორი;
+SELECT name FROM Books JOIN Lent_Books JOIN Authors
+ON Books.id = Lent_Books.book_id AND Authors.id = Books.author_id
+GROUP BY author_id
+ORDER BY COUNT(Lent_Books.book_id) DESC
+LIMIT 3
+
+-- 5) ყველაზე წიგნიერი ქალაქი;
+SELECT Cities.name FROM
+Lent_Books JOIN Books JOIN Users JOIN Cities
+ON Lent_Books.Book_id = Books.id
+AND Users.id = Lent_Books.user_id
+AND Users.city_id  = Cities.id
+GROUP BY city_id
+ORDER BY COUNT(city_id) DESC
+LIMIT 1;
+
+-- 6) რა ჟანრის წიგნებს არ აბრუნებენ (genre, book_id)?
+SELECT DISTINCT genre, Books.id AS Book_ID
+FROM Lent_Books JOIN Books JOIN Genres
+ON Books.id = Lent_Books.book_id
+AND Genres.id = Books.genre_id
+AND returned IS NULL
+
+-- 7) ვინ გადააცილა deadline-ს (წიგნის წაღებიდან 30 დღე, user_id, book_id).
+SELECT DISTINCT u.first_name, u.last_name
+FROM Users u
+JOIN Lent_Books lb ON  u.id = lb.user_id
+WHERE lb.returned > lb.taken + 2592000;
+
+// Damaged_Books-ში საჭიროა შემოწმება,
+// 5) დავალებაშიც იმაზე, ერთნაირად წიგნიერი ქალაქები არსებობს თუ არა
+// მხოლოდ იმ მომხმარებელმა თუ გააფუჭა წიგნი, რომელსაც ერთხელ მაინც ჰქონდა
+
+PHP admin panel ბიბლიოთეკებისთვის
+1) ავტორიზაცია არაა საჭირო. ერთ გვერდზე ბიბლიოთეკების სია სახელითა და მისამართით, ყველა რეგისტრირებული მომხმარებლის სია. ორი სია ორ სვეტად.
+2) მომხმარებლის დამატებისა და მაღაზიის დამატების ღილაკები ახალ გვერდზე გადასვლით;
+3) მაღაზიის სახელთან edit ბმული, რომელსაც გადავყავართ მისი ინფორმაციით შევსებულ გვერდზე.
+ყველა მონაცემი შეცვლადი იყოს (id-ის გარდა); მაღაზიის წაშლის ბმულიც delete; new; ამ ყველაფერზე popup;
+4) დავალებებები 2-3)-ის ანალოგიური მომხმარებლებისთვის. 
+
+Monospace არის კარგი font-family
